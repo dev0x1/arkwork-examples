@@ -2,7 +2,7 @@
 
 ## Overview
 
-Few basic examples showing how to use [arkwork-rs libraries](https://github.com/arkworks-rs) to construct zk-SNARKS circuits.
+Few basic examples showing how to use [arkwork-rs libraries](https://github.com/arkworks-rs) to construct zk-SNARKS circuits. Examples use Groth16 and Marlin zk-SNARKs system.
 
 Examples are:
 * Prover claims that she knows "Two values *a* and *b* such that *a * b == c* where c is a public value".
