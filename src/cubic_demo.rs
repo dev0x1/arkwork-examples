@@ -61,16 +61,15 @@ impl<F: Field> ConstraintSynthesizer<F> for CubicDemoCircuit<F> {
         )?;
 
         // allocate the public output variable out
-        let five = F::one() + F::one() + F::one() + F::one() + F::one(); //FIXME
         let out = cs.new_input_variable(|| {
             let mut tmp = x_cubed_val.unwrap();
             tmp.add_assign(&x_val.unwrap());
-            tmp.add_assign(five);
+            tmp.add_assign(F::from(5u32));
             Ok(tmp)
         })?;
         // enforce constraints tmp_2 + 5 = out
         cs.enforce_constraint(
-            lc!() + x_cubed + x + (five, ConstraintSystem::<F>::one()),
+            lc!() + x_cubed + x + (F::from(5u32), ConstraintSystem::<F>::one()),
             lc!() + ConstraintSystem::<F>::one(),
             lc!() + out
         )?;
