@@ -51,9 +51,10 @@ mod test {
     use ark_snark::SNARK;
     use ark_std::{ops::*, UniformRand};
     use blake2::Blake2s;
+    use ark_serialize::{CanonicalSerialize, CanonicalDeserialize};
 
     #[test]
-    fn test_groth16() {
+    fn test_mult_groth16() {
         let num_constraints: usize = 3;
         let num_variables: usize = 3;
 
@@ -70,7 +71,6 @@ mod test {
             rng,
         )
         .unwrap();
-
         for _ in 0..5 {
             let a = BlsFr::rand(rng);
             let b = BlsFr::rand(rng);
@@ -95,6 +95,75 @@ mod test {
             assert!(!Groth16::<Bls12_381>::verify(&vk, &[a], &proof).unwrap());
         }
     }
+
+    #[test]
+    fn test_serde_groth16() {
+        let num_constraints: usize = 3;
+        let num_variables: usize = 3;
+
+        let rng = &mut ark_std::test_rng();
+
+        // generate the setup parameters
+        let (pk, vk) = Groth16::<Bls12_381>::circuit_specific_setup(
+            MultiplyDemoCircuit::<BlsFr> {
+                a: None,
+                b: None,
+                num_variables,
+                num_constraints,
+            },
+            rng,
+        )
+        .unwrap();
+
+            let a = BlsFr::rand(rng);
+            let b = BlsFr::rand(rng);
+            let mut c = a;
+            c.mul_assign(&b);
+
+            // calculate the proof by passing witness variable value
+            let proof = Groth16::<Bls12_381>::prove(
+                &pk,
+                MultiplyDemoCircuit::<BlsFr> {
+                    a: Some(a),
+                    b: Some(b),
+                    num_variables,
+                    num_constraints,
+                },
+                rng,
+            )
+            .unwrap();
+
+    let mut serialized = vec![0; proof.serialized_size()];
+    proof.serialize(&mut serialized[..]).unwrap();
+
+    // println!("proof: {:?}", proof.serialized_size());
+    // println!("proof: {:?}", serialized);
+
+    let pr = <Groth16<Bls12_381> as SNARK<BlsFr>>::Proof::deserialize(&serialized[..]).unwrap();
+    assert_eq!(proof, pr);
+
+    let mut serialized = vec![0; pk.serialized_size()];
+    pk.serialize(&mut serialized[..]).unwrap();
+
+    // println!("pk-size: {:?}", pk.serialized_size());
+    // println!("pk: {:?}", serialized);
+    let p = <Groth16<Bls12_381> as SNARK<BlsFr>>::ProvingKey::deserialize(&serialized[..]).unwrap();
+    assert_eq!(pk, p);
+
+    let mut serialized = vec![0; vk.serialized_size()];
+    vk.serialize(&mut serialized[..]).unwrap();
+
+    // println!("vk-size: {:?}", vk.serialized_size());
+    // println!("vk: {:?}", serialized);
+
+    let v =
+        <Groth16<Bls12_381> as SNARK<BlsFr>>::VerifyingKey::deserialize(&serialized[..]).unwrap();
+    assert_eq!(vk, v);
+
+    assert!(Groth16::<Bls12_381>::verify(&vk, &[c], &proof).unwrap());
+    assert!(Groth16::<Bls12_381>::verify(&v, &[c], &pr).unwrap());
+    
+}
 
     #[test]
     fn test_marlin() {
