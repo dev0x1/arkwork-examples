@@ -101,11 +101,9 @@ impl<ConstraintF: Field> ConstraintSynthesizer<ConstraintF> for MultiplyDemoCirc
 mod test {
     use super::*;
     use ark_bls12_381::{Bls12_381, Fr as BlsFr};
-    use ark_groth16::Groth16;
     use ark_marlin::Marlin;
     use ark_poly::univariate::DensePolynomial;
     use ark_poly_commit::marlin_pc::MarlinKZG10;
-    use ark_snark::SNARK;
     use ark_std::{ops::*, UniformRand};
     use blake2::Blake2s;
 
