@@ -8,8 +8,6 @@ use ark_relations::{
 // or more general x^3 + x + 5 == (a public value)
 struct CubicDemoCircuit<F: Field> {
     pub x: Option<F>,
-    num_constraints: usize,
-    num_variables: usize,
 }
 
 impl<F: Field> ConstraintSynthesizer<F> for CubicDemoCircuit<F> {
@@ -108,7 +106,7 @@ mod test {
     use blake2::Blake2s;
 
     #[test]
-    fn test_marlin_universal_srs() {
+    fn test_marlin_multi_circuit_cubic_multiply() {
         type MultiPC = MarlinKZG10<Bls12_381, DensePolynomial<BlsFr>>;
         type MarlinInst = Marlin<BlsFr, MultiPC, Blake2s>;
 
@@ -120,22 +118,14 @@ mod test {
             MarlinInst::universal_setup(num_constraints, num_variables, num_variables, rng)
                 .unwrap();
 
-        let circuit_cubic = CubicDemoCircuit {
-            x: None,
-            num_variables,
-            num_constraints,
-        };
+        let circuit_cubic = CubicDemoCircuit { x: None };
 
         // generate the setup parameters
         let (index_pk, index_vk) = MarlinInst::index(&universal_srs, circuit_cubic).unwrap();
 
         // calculate the proof by passing witness variable value
         let x = BlsFr::from(3);
-        let circuit_cubic_instance = CubicDemoCircuit {
-            x: Some(x),
-            num_variables,
-            num_constraints,
-        };
+        let circuit_cubic_instance = CubicDemoCircuit { x: Some(x) };
         let proof = MarlinInst::prove(&index_pk, circuit_cubic_instance, rng).unwrap();
 
         // validate the proof
@@ -167,5 +157,48 @@ mod test {
         let mut c = a;
         c.mul_assign(&b);
         assert!(MarlinInst::verify(&index_vk, &[c], &proof, rng).unwrap());
+    }
+
+    #[test]
+    fn test_marlin_single_circuit_multiply() {
+        type MultiPC = MarlinKZG10<Bls12_381, DensePolynomial<BlsFr>>;
+        type MarlinInst = Marlin<BlsFr, MultiPC, Blake2s>;
+
+        let rng = &mut ark_std::test_rng();
+
+        let num_constraints: usize = 3;
+        let num_variables: usize = 3;
+        let universal_srs =
+            MarlinInst::universal_setup(num_constraints, num_variables, num_variables, rng)
+                .unwrap();
+
+        let circuit = MultiplyDemoCircuit {
+            a: None,
+            b: None,
+            num_variables,
+            num_constraints,
+        };
+        // generate the setup parameters
+        let (index_pk, index_vk) = MarlinInst::index(&universal_srs, circuit).unwrap();
+
+        let a = BlsFr::rand(rng);
+        let b = BlsFr::rand(rng);
+
+        // calculate the proof by passing witness variable value
+        let circuit_instance = MultiplyDemoCircuit {
+            a: Some(a),
+            b: Some(b),
+            num_variables,
+            num_constraints,
+        };
+
+        let proof1 = MarlinInst::prove(&index_pk, circuit_instance, rng).unwrap();
+
+        // validate the proof
+        let mut c = a;
+        c.mul_assign(&b);
+        assert!(MarlinInst::verify(&index_vk, &[c], &proof1, rng).unwrap());
+
+        assert!(!MarlinInst::verify(&index_vk, &[BlsFr::from(5u32)], &proof1, rng).unwrap());
     }
 }

@@ -67,7 +67,7 @@ mod test {
     use ark_snark::SNARK;
 
     #[test]
-    fn test_groth16() {
+    fn test_groth16_circuit_cubic() {
         let rng = &mut ark_std::test_rng();
 
         // generate the setup parameters
